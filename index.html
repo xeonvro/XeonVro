@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+      XeonBTC
+    </title>
+    <meta name="description" content="XeonBTC: Tech contents and posts site. Exploring technology." />
+    <meta name="keywords" content="XeonBTC, Tech Blog, Technology, Posts, Tech Contents" />
+    <meta name="author" content="XeonBTC" />
+    <meta property="og:title" content="XeonBTC | Tech Blog" />
+    <meta property="og:description" content="Tech contents and posts from XeonBTC." />
+    <meta property="og:image" content="https://files.catbox.moe/fisdnc.jpg" />
+    <meta property="og:url" content="" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+    <link href="https://fonts.googleapis.com/css2?family=Chilanka&amp;family=Noto+Sans+Malayalam:wght@400;700&amp;family=VT323&amp;display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+      html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #050505; 
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-family: &#39;VT323&#39;, &#39;Chilanka&#39;, &#39;Noto Sans Malayalam&#39;, monospace;
+            overflow-x: hidden;
+            padding-bottom: 20px;
+            text-shadow: 0 0 3px rgba(255, 255, 255, 0.4), 0 0 8px rgba(255, 255, 255, 0.2);
+            -webkit-font-smoothing: none;
+        }
+
+        .crt-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 9999;
+            pointer-events: none;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 4px, 3px 100%;
+            box-shadow: inset 0 0 100px rgba(0,0,0,0.9);
+        }
+
+        .crt-flicker {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 9998;
+            pointer-events: none;
+            background: rgba(255, 255, 255, 0.02);
+            opacity: 0;
+            animation: crt-flicker-anim 0.15s infinite;
+        }
+
+        @keyframes crt-flicker-anim {
+            0% { opacity: 0.02; }
+            50% { opacity: 0.05; }
+            100% { opacity: 0.02; }
+        }
+
+        #bgRainCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            opacity: 0.2;
+            pointer-events: none;
+        }
+
+        header {
+            font-size: 2.8rem;
+            text-align: center;
+            padding: 1.5rem;
+            text-transform: uppercase;
+            border-bottom: 2px dashed #444; 
+            width: 100%;
+            box-sizing: border-box;
+            background: linear-gradient(to bottom, #ffffff 40%, #8a0303 80%, #d10000 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0px 2px 5px rgba(200, 0, 0, 0.6));
+            letter-spacing: 2px;
+        }
+
+        .blinking-cursor::after {
+            content: &#34;_&#34;;
+            animation: blink 1s step-end infinite;
+            -webkit-text-fill-color: #d10000;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+        
+        .tv-wrapper {
+            margin-top: 2rem;
+            padding: 0 15px;
+            width: 100%;
+            max-width: 600px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            z-index: 1;
+        }
+
+        .tv-frame {
+            position: relative;
+            overflow: hidden;
+            border: 2px solid #222;
+            background-color: #050505;
+            width: 100%;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+        }
+
+        .tv-image {
+            display: block;
+            width: 100%;
+            height: auto;
+            transform: scale(1.02);
+            animation: real-tv-flicker 4s infinite;
+        }
+
+        .under-line, .under-line-bottom {
+            height: 2px; 
+            background-color: #ffffff; 
+            width: 0;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.6);
+        }
+
+        .under-line {
+            margin-top: 15px;
+            animation: draw-half-line 0.8s ease-out forwards;
+        }
+
+        .under-line-bottom {
+            animation: draw-half-line 0.8s ease-out 1s forwards;
+        }
+
+        .about-me {
+            margin-top: 1.5rem;
+            position: relative;
+            padding: 15px 10px;
+            line-height: 1.6;
+            color: #d4d4d4;
+            min-height: 120px;
+            font-size: 1.3rem;
+            word-wrap: break-word;
+        }
+
+        .about-me-title {
+            color: #ffffff; 
+            font-weight: bold;
+            display: block;
+            margin-bottom: 12px;
+            letter-spacing: 1px;
+            min-height: 24px;
+            font-size: 1.5rem;
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+        }
+
+        .social-links {
+            margin-top: 1.5rem;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            opacity: 0;
+            animation: fade-in-up 0.6s ease-out 1.2s forwards;
+            flex-wrap: wrap;
+        }
+
+        .social-links a {
+            color: #ffffff;
+            text-decoration: none;
+            font-size: 1.6rem;
+            transition: color 0.3s, text-shadow 0.3s, transform 0.3s;
+        }
+
+        .social-links a:hover {
+            color: #ffffff;
+            text-shadow: 0 0 15px rgba(255, 255, 255, 1);
+            transform: scale(1.05);
+        }
+
+        .nav-link-top {
+            margin-top: 1.5rem;
+            align-self: center;
+            color: #d4d4d4;
+            text-decoration: none;
+            font-size: 1.4rem;
+            border: 1px dashed #444;
+            padding: 8px 15px;
+            transition: all 0.3s ease;
+            opacity: 0;
+            animation: fade-in-up 0.6s ease-out 1.3s forwards;
+            background-color: rgba(5,5,5,0.8);
+        }
+
+        .nav-link-top:hover {
+            color: #ffffff;
+            border-color: #ffffff;
+            box-shadow: 0 0 10px rgba(255,255,255,0.2), inset 0 0 10px rgba(255,255,255,0.1);
+        }
+
+        .dark-web-card {
+            margin-top: 2rem;
+            background-color: rgba(5, 5, 5, 0.9);
+            border: 1px dashed #444;
+            border-left: 4px solid #ffffff; 
+            padding: 15px 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            opacity: 0;
+            animation: fade-in-up 0.6s ease-out 1.4s forwards;
+            box-sizing: border-box;
+            width: 100%;
+        }
+
+        .dark-web-card:hover {
+            background-color: rgba(15, 15, 15, 1);
+            border-color: #ffffff;
+            box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.2), 0 0 15px rgba(255, 255, 255, 0.3);
+        }
+
+        .dark-web-card span {
+            color: #ffffff;
+            font-size: 1.3rem;
+        }
+
+        .onion-link {
+            color: #ffffff; 
+            font-size: 1.3rem;
+            margin-top: 8px;
+            word-break: break-all;
+            transition: text-shadow 0.3s;
+        }
+
+        .dark-web-card:hover .onion-link {
+            text-shadow: 0 0 12px rgba(255, 255, 255, 1);
+        }
+
+        .card-footer {
+            color: #666;
+            font-size: 1.1rem;
+            margin-top: 12px;
+            text-align: right;
+            transition: color 0.3s;
+        }
+
+        .dark-web-card:hover .card-footer {
+            color: #ffffff;
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.8);
+        }
+
+        .map-section {
+            margin-top: 2rem;
+            width: 100%;
+            opacity: 0;
+            animation: fade-in-up 0.6s ease-out 1.6s forwards;
+        }
+
+        .map-header, .posts-header {
+            color: #ffffff; 
+            font-size: 1.4rem;
+            margin-bottom: 8px;
+            font-weight: bold;
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+            letter-spacing: 1px;
+        }
+
+        .map-monitor-case {
+            background-color: #1a1a1a;
+            border: 2px solid #333;
+            border-bottom: 25px solid #111;
+            border-radius: 8px 8px 4px 4px;
+            padding: 10px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.8), inset 0 2px 0 rgba(255,255,255,0.1);
+            position: relative;
+            box-sizing: border-box;
+            width: 100%;
+        }
+
+        .map-monitor-case::after {
+            content: &#39;&#39;;
+            position: absolute;
+            bottom: -15px;
+            right: 15px;
+            width: 6px;
+            height: 6px;
+            background-color: #ffffff; 
+            border-radius: 50%;
+            box-shadow: 0 0 5px #ffffff, 0 0 10px #ffffff;
+        }
+
+        .map-monitor-case::before {
+            content: &#39;&#39;;
+            position: absolute;
+            bottom: -15px;
+            left: 15px;
+            width: 30px;
+            height: 4px;
+            background: repeating-linear-gradient(90deg, #333, #333 4px, transparent 4px, transparent 8px);
+        }
+
+        .map-screen {
+            width: 100%;
+            height: 250px;
+            position: relative;
+            background-color: #050505;
+            overflow: hidden;
+            border-radius: 12px;
+            box-shadow: inset 0 0 15px rgba(0,0,0,1);
+        }
+        
+        .map-screen::after {
+            content: &#34;&#34;;
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(circle, transparent 50%, rgba(0,0,0,0.6) 100%), 
+                        linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.3) 50%);
+            background-size: 100% 100%, 100% 4px;
+            z-index: 998;
+            pointer-events: none;
+        }
+
+        #hackerMap {
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .leaflet-tile-pane {
+            animation: map-glitch 14s infinite;
+        }
+
+        .leaflet-tile-pane.cleared-glitch {
+            animation: none !important;
+            filter: grayscale(100%) brightness(0.8) contrast(150%) !important;
+        }
+
+        .leaflet-control-container {
+            display: none; 
+        }
+
+        .beep-dot-container {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 40px;
+            height: 40px;
+        }
+
+        .beep-core {
+            width: 12px;
+            height: 12px;
+            background-color: #ffffff;
+            border-radius: 50%;
+            box-shadow: 0 0 8px #ffffff, 0 0 15px #d10000;
+            z-index: 2;
+        }
+
+        .beep-ring {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            border: 2px solid #d10000;
+            border-radius: 50%;
+            animation: radar-beep 1.5s infinite ease-out;
+            z-index: 1;
+        }
+
+        @keyframes radar-beep {
+            0% { transform: scale(0.3); opacity: 1; }
+            100% { transform: scale(2); opacity: 0; }
+        }
+
+        .device-info-bar {
+            margin-top: 1rem;
+            background-color: rgba(5, 5, 5, 0.9);
+            border: 1px dashed #444;
+            border-left: 4px solid #ffffff; 
+            padding: 12px 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            opacity: 0;
+            animation: fade-in-up 0.6s ease-out 1.8s forwards;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .device-info-bar svg {
+            fill: #ffffff; 
+            width: 32px;
+            height: 32px;
+            flex-shrink: 0;
+            filter: drop-shadow(0 0 3px rgba(255,255,255,0.6));
+        }
+
+        .device-text {
+            color: #d4d4d4;
+            font-size: 1.3rem;
+            word-break: break-word;
+        }
+
+        .device-text span {
+            color: #ffffff; 
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+        }
+
+        .posts-section {
+            margin-top: 2.5rem;
+            width: 100%;
+            opacity: 0;
+            animation: fade-in-up 0.6s ease-out 2.0s forwards;
+        }
+
+        .search-container {
+            position: relative;
+            width: 100%;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+        }
+
+        .post-search {
+            width: 100%;
+            background-color: rgba(5,5,5,0.9);
+            border: 1px dashed #444;
+            border-left: 4px solid #ffffff;
+            color: #ffffff;
+            font-family: &#39;VT323&#39;, &#39;Chilanka&#39;, &#39;Noto Sans Malayalam&#39;, monospace;
+            font-size: 1.3rem;
+            padding: 10px 40px 10px 15px;
+            box-sizing: border-box;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .post-search::placeholder {
+            color: #666;
+        }
+
+        .post-search:focus {
+            border-color: #ffffff;
+            box-shadow: inset 0 0 8px rgba(255,255,255,0.2), 0 0 8px rgba(255,255,255,0.2);
+        }
+
+        .clear-search {
+            position: absolute;
+            right: 15px;
+            color: #d10000;
+            font-size: 1.3rem;
+            cursor: pointer;
+            user-select: none;
+            transition: text-shadow 0.3s;
+            display: none;
+            font-weight: bold;
+        }
+
+        .clear-search:hover {
+            text-shadow: 0 0 8px #d10000;
+        }
+
+        .suggestions-box {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            background-color: #0a0a0a;
+            border: 1px solid #333;
+            border-top: none;
+            z-index: 1000;
+            display: none;
+            box-sizing: border-box;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.8);
+        }
+
+        .suggestion-item {
+            padding: 10px 15px;
+            color: #aaa;
+            font-size: 1.2rem;
+            cursor: pointer;
+            border-bottom: 1px solid #1a1a1a;
+            transition: background-color 0.2s, color 0.2s;
+        }
+
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+
+        .suggestion-item:hover {
+            background-color: #1a1a1a;
+            color: #ffffff;
+        }
+
+        .post-card {
+            background-color: rgba(5, 5, 5, 0.9);
+            border: 1px dashed #444;
+            border-left: 4px solid #ffffff; 
+            padding: 15px 20px;
+            margin-bottom: 1.5rem;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+            width: 100%;
+        }
+
+        .post-card:hover {
+            background-color: rgba(15, 15, 15, 1);
+            border-color: #ffffff;
+            box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.1), 0 0 15px rgba(255, 255, 255, 0.1);
+        }
+
+        @keyframes highlight-post {
+            0%, 100% { border-left-color: #ffffff; box-shadow: none; }
+            50% { border-left-color: #d10000; box-shadow: inset 0 0 20px rgba(209, 0, 0, 0.4), 0 0 20px rgba(209, 0, 0, 0.4); }
+        }
+
+        .post-card.highlighted {
+            animation: highlight-post 1.5s ease-in-out 3;
+        }
+
+        .post-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px dashed #444;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+        }
+
+        .post-title {
+            color: #ffffff;
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+            margin: 0;
+            padding: 0;
+            border-bottom: none;
+        }
+
+        .share-icon svg {
+            fill: #ffffff;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            transition: fill 0.3s, filter 0.3s;
+            display: block;
+        }
+
+        .share-icon svg:hover {
+            fill: #d10000;
+            filter: drop-shadow(0 0 5px #d10000);
+        }
+
+        .post-img {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #333;
+            margin-bottom: 12px;
+            display: block;
+            filter: grayscale(100%);
+            transition: filter 0.3s;
+        }
+
+        .post-card:hover .post-img {
+            filter: grayscale(80%);
+        }
+
+        .post-content {
+            color: #d4d4d4;
+            font-size: 1.3rem;
+            white-space: pre-wrap; 
+            word-break: break-word;
+            line-height: 1.5;
+        }
+
+        .post-content.collapsed {
+            display: -webkit-box;
+            -webkit-line-clamp: 4;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .post-actions {
+            margin-top: 15px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .read-more-btn {
+            color: #00aaff;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: inline-block;
+            transition: color 0.3s, text-shadow 0.3s;
+        }
+
+        .read-more-btn:hover {
+            color: #00ccff;
+            text-shadow: 0 0 8px #00ccff;
+        }
+
+        .post-link {
+            color: #ffffff;
+            text-decoration: underline;
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.4);
+        }
+
+        .post-link:hover {
+            color: #d10000;
+            text-shadow: 0 0 8px #d10000;
+        }
+
+        .site-footer {
+            margin-top: 3rem;
+            margin-bottom: 1rem;
+            padding: 1.5rem;
+            text-align: center;
+            color: #666;
+            font-size: 1.2rem;
+            border-top: 1px dashed #333;
+            width: 100%;
+            max-width: 600px;
+            box-sizing: border-box;
+            opacity: 0;
+            animation: fade-in-up 0.6s ease-out 2.2s forwards;
+        }
+
+        .site-footer span {
+            color: #d10000;
+        }
+
+        @media (max-width: 600px) {
+            header { font-size: 2.2rem; padding: 1rem; }
+            .about-me { font-size: 1.2rem; }
+            .about-me-title { font-size: 1.3rem; }
+            .social-links { gap: 15px; }
+            .social-links a { font-size: 1.4rem; }
+            .nav-link-top { font-size: 1.2rem; padding: 6px 12px; }
+            .onion-link { font-size: 1.2rem; }
+            .dark-web-card { padding: 12px 15px; }
+            .device-text { font-size: 1.2rem; }
+            .map-screen { height: 200px; }
+            .post-content { font-size: 1.2rem; }
+            .post-actions { flex-direction: column; align-items: flex-start; gap: 10px; }
+        }
+
+        @keyframes draw-half-line {
+            0% { width: 0%; }
+            100% { width: 50%; }
+        }
+
+        @keyframes fade-in-up {
+            0% { opacity: 0; transform: translateY(10px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes real-tv-flicker {
+            0% { filter: grayscale(100%) brightness(1) contrast(1.1); }
+            5% { filter: grayscale(100%) brightness(1.1) contrast(1.3); }
+            10% { filter: grayscale(100%) brightness(0.95) contrast(1.1); }
+            15% { filter: grayscale(100%) brightness(1) contrast(1.1); }
+            45% { filter: grayscale(100%) brightness(1) contrast(1.1); }
+            46% { filter: grayscale(100%) brightness(1.4) contrast(1.5) blur(1px); }
+            48% { filter: grayscale(100%) brightness(0.7) contrast(1.2); }
+            50% { filter: grayscale(100%) brightness(1) contrast(1.1); }
+            75% { filter: grayscale(100%) brightness(1) contrast(1.1); }
+            76% { filter: grayscale(100%) brightness(0.5) contrast(1.6); }
+            78% { filter: grayscale(100%) brightness(1.2) contrast(1.2); }
+            80% { filter: grayscale(100%) brightness(1) contrast(1.1); }
+            100% { filter: grayscale(100%) brightness(1) contrast(1.1); }
+        }
+
+        @keyframes map-glitch {
+            0%, 92%, 100% { filter: invert(100%) grayscale(100%) contrast(180%) brightness(0.8); }
+            94% { filter: invert(100%) grayscale(100%) contrast(200%) brightness(1.2) blur(1px); }
+            96% { filter: invert(100%) grayscale(100%) contrast(150%) brightness(0.5); }
+            97% { filter: invert(100%) grayscale(100%) contrast(180%) brightness(0.8); }
+            98% { filter: invert(100%) grayscale(100%) contrast(220%) brightness(0.4); }
+            99% { filter: invert(100%) grayscale(100%) contrast(150%) brightness(1.0); }
+        }
+    </style>
+  </head>
+  <body>
+    <div class="crt-overlay">
+    </div>
+    <div class="crt-flicker">
+    </div>
+    <canvas id="bgRainCanvas">
+    </canvas>
+    <header class="blinking-cursor">
+      XeonBTC
+    </header>
+    <div class="tv-wrapper">
+      <div class="tv-frame">
+        <img class="tv-image" src="https://files.catbox.moe/fisdnc.jpg" alt="tv-display-image" />
+      </div>
+      <div class="under-line">
+      </div>
+      <div class="about-me">
+        <span id="scramble-title" class="about-me-title"></span>
+        <div id="scramble-text">
+        </div>
+      </div>
+      <div class="under-line-bottom">
+      </div>
+      <div class="social-links">
+        <a href="https://instagram.com/XeonBTC" target="_blank">        [ INSTAGRAM ]
+</a>
+        <a href="https://t.me/XeonBTC" target="_blank">        [ TELEGRAM ]
+</a>
+      </div>
+      <a class="nav-link-top" href="#postsSection">      [ SHOW POSTS ]
+</a>
+      <div class="dark-web-card" id="darkWebCard">
+        <span>        CHECKOUT MY DARK WEB ALSO:
+</span>
+        <div class="onion-link">
+          kirab6xnotwowwvgkzkzfqju3ys6a23nyxnz3kcvnx2jjgos3xjgqjad.onion
+        </div>
+        <div class="card-footer" id="copyFooter">
+          [ TAP TO COPY ]
+        </div>
+      </div>
+      <div class="map-section">
+        <div class="map-header">
+          YOUR IP BASED LOCATION:
+        </div>
+        <div class="map-monitor-case">
+          <div class="map-screen">
+            <div id="hackerMap">
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="device-info-bar">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M17 1H7c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-2-2-2zm0 18H7V5h10v14zm-6-15h2v1h-2V4zM9 8h6v1H9V8zm0 3h4v1H9v-1zm0 3h6v1H9v-1z">
+          </path>
+        </svg>
+        <div class="device-text" id="batteryText">
+          VISITOR:
+          <span id="visitorDevice">          LOCATING...
+</span>
+          <br />
+          PWR LEVEL:
+          <span id="visitorBattery">          CALCULATING...
+</span>
+        </div>
+      </div>
+      <div class="posts-section" id="postsSection">
+        <div class="posts-header">
+          POSTS:
+        </div>
+        <div class="search-container">
+          <input type="text" id="postSearch" class="post-search" placeholder="Search posts..." autocomplete="off" />
+          <div id="clearSearch" class="clear-search" title="Clear Search">
+            [X]
+          </div>
+          <div class="suggestions-box" id="suggestionBox">
+          </div>
+        </div>
+        <div id="postsContainer">
+        </div>
+      </div>
+      <footer class="site-footer">
+        © 2026
+        <span>        XeonBTC
+</span>
+        . ALL RIGHTS RESERVED.
+      </footer>
+    </div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+    </script>
+    <script>
+      document.addEventListener(&#34;DOMContentLoaded&#34;, () =&gt; {
+            
+            const titleElement = document.getElementById(&#39;scramble-title&#39;);
+            const textElement = document.getElementById(&#39;scramble-text&#39;);
+            const targetTitle = &#34;XeonBTC DETAILS:&#34;;
+            const targetText = &#34;XeonBTC. TECH CONTENTS POST SITE. EXPLORING TECHNOLOGY AND LATEST UPDATES. WELCOME TO MY BLOG.&#34;;
+            const symbols = &#34;ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&amp;*!&lt;&gt;~&#34;;
+
+            function scramble(element, finalString, speed = 10) {
+                let iteration = 0;
+                let interval = setInterval(() =&gt; {
+                    element.innerText = finalString.split(&#34;&#34;).map((letter, index) =&gt; {
+                        if (index &lt; iteration) return finalString[index];
+                        if (finalString[index] === &#34; &#34;) return &#34; &#34;;
+                        return symbols[Math.floor(Math.random() * symbols.length)];
+                    }).join(&#34;&#34;);
+                    if (iteration &gt;= finalString.length) clearInterval(interval);
+                    iteration += 1 / 1.5; 
+                }, speed);
+            }
+
+            setTimeout(() =&gt; {
+                scramble(titleElement, targetTitle, 15);
+                setTimeout(() =&gt; scramble(textElement, targetText, 10), 200); 
+            }, 100); 
+
+            const darkWebCard = document.getElementById(&#39;darkWebCard&#39;);
+            const copyFooter = document.getElementById(&#39;copyFooter&#39;);
+            const onionUrl = &#34;kirab6xnotwowwvgkzkzfqju3ys6a23nyxnz3kcvnx2jjgos3xjgqjad.onion&#34;;
+
+            darkWebCard.addEventListener(&#39;click&#39;, () =&gt; {
+                navigator.clipboard.writeText(onionUrl).then(() =&gt; {
+                    copyFooter.innerText = &#34;[ COPIED! ]&#34;;
+                    copyFooter.style.color = &#34;#ffffff&#34;;
+                    setTimeout(() =&gt; {
+                        copyFooter.innerText = &#34;[ TAP TO COPY ]&#34;;
+                        copyFooter.style.color = &#34;&#34;; 
+                    }, 2000);
+                }).catch(err =&gt; {});
+            });
+
+            const map = L.map(&#39;hackerMap&#39;, { 
+                zoomControl: false,
+                dragging: false,       
+                touchZoom: false,      
+                scrollWheelZoom: false,
+                doubleClickZoom: false,
+                maxZoom: 7
+            }).setView([0, 0], 2); 
+            
+            L.tileLayer(&#39;https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png&#39;, {
+                attribution: &#39;&amp;copy; OpenStreetMap contributors&#39;
+            }).addTo(map);
+
+            const customMarkerHTML = `
+                &lt;div class=&#34;beep-dot-container&#34;&gt;
+                    &lt;div class=&#34;beep-ring&#34;&gt;&lt;/div&gt;
+                    &lt;div class=&#34;beep-core&#34;&gt;&lt;/div&gt;
+                &lt;/div&gt;
+            `;
+
+            const hackerIcon = L.divIcon({
+                className: &#39;custom-icon&#39;,
+                html: customMarkerHTML,
+                iconSize: [40, 40],
+                iconAnchor: [20, 20]
+            });
+
+            fetch(&#39;https://ipapi.co/json/&#39;)
+                .then(res =&gt; res.json())
+                .then(data =&gt; {
+                    const lat = data.latitude || 0;
+                    const lng = data.longitude || 0;
+                    map.setView([lat, lng], 7);
+                    L.marker([lat, lng], {icon: hackerIcon}).addTo(map);
+                })
+                .catch(err =&gt; {});
+
+            let last_x, last_y, last_z;
+            const shake_threshold = 15;
+            let glitchTimeout;
+
+            window.addEventListener(&#39;devicemotion&#39;, function(e) {
+                let acc = e.accelerationIncludingGravity;
+                if (!acc.x) return;
+                
+                if (last_x !== undefined) {
+                    let deltaX = Math.abs(acc.x - last_x);
+                    let deltaY = Math.abs(acc.y - last_y);
+                    let deltaZ = Math.abs(acc.z - last_z);
+                    
+                    if (deltaX + deltaY + deltaZ &gt; shake_threshold) {
+                        clearMapGlitch();
+                    }
+                }
+                last_x = acc.x;
+                last_y = acc.y;
+                last_z = acc.z;
+            });
+
+            function clearMapGlitch() {
+                const tilePane = document.querySelector(&#39;.leaflet-tile-pane&#39;);
+                if (tilePane) {
+                    tilePane.classList.add(&#39;cleared-glitch&#39;);
+                }
+                clearTimeout(glitchTimeout);
+                glitchTimeout = setTimeout(() =&gt; {
+                    if (tilePane) {
+                        tilePane.classList.remove(&#39;cleared-glitch&#39;);
+                    }
+                }, 1500); 
+            }
+
+            function getVisitorDevice() {
+                const ua = navigator.userAgent;
+                if (/windows phone/i.test(ua)) return &#34;Windows Phone&#34;;
+                if (/android/i.test(ua)) {
+                    const match = ua.match(/Android.*?; (.*?) Build/i);
+                    return match ? match[1].trim() : &#34;Android Device&#34;;
+                }
+                if (/iPad|iPhone|iPod/.test(ua) &amp;&amp; !window.MSStream) {
+                    if (/iPhone/.test(ua)) return &#34;iPhone&#34;;
+                    if (/iPad/.test(ua)) return &#34;iPad&#34;;
+                    return &#34;Apple Device&#34;;
+                }
+                if (/Mac OS X/.test(ua)) return &#34;Mac OS&#34;;
+                if (/Windows NT/.test(ua)) return &#34;Windows PC&#34;;
+                if (/Linux/.test(ua)) return &#34;Linux PC&#34;;
+                return &#34;Unknown Device&#34;;
+            }
+
+            document.getElementById(&#39;visitorDevice&#39;).innerText = getVisitorDevice();
+
+            const batteryTextContainer = document.getElementById(&#39;visitorBattery&#39;);
+            
+            function updateBatteryText(level, isCharging) {
+                const percent = Math.floor(level * 100);
+                batteryTextContainer.innerText = isCharging ? &#34;[AC CONNECTED]&#34; : `[${percent}%]`;
+            }
+
+            if (&#39;getBattery&#39; in navigator) {
+                navigator.getBattery().then((battery) =&gt; {
+                    updateBatteryText(battery.level, battery.charging);
+                    battery.addEventListener(&#39;levelchange&#39;, () =&gt; updateBatteryText(battery.level, battery.charging));
+                    battery.addEventListener(&#39;chargingchange&#39;, () =&gt; updateBatteryText(battery.level, battery.charging));
+                });
+            } else {
+                batteryTextContainer.innerText = &#34;[UNKNOWN]&#34;;
+            }
+
+            let allPosts = [];
+            const techKeywords = [&#39;google&#39;, &#39;osint&#39;, &#39;linux&#39;, &#39;cybersecurity&#39;, &#39;hack&#39;, &#39;programming&#39;, &#39;android&#39;, &#39;api&#39;, &#39;bot&#39;, &#39;termux&#39;, &#39;python&#39;, &#39;java&#39;, &#39;php&#39;, &#39;javascript&#39;, &#39;c++&#39;, &#39;network&#39;, &#39;recon&#39;, &#39;malayalam&#39;, &#39;tech&#39;];
+
+            function linkify(text) {
+                const urlRegex = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&amp;@#\/%?=~_|!:,.;]*[-A-Z0-9+&amp;@#\/%=~_|])/ig;
+                return text.replace(urlRegex, function(url) {
+                    return &#39;&lt;a href=&#34;&#39; + url + &#39;&#34; target=&#34;_blank&#34; class=&#34;post-link&#34;&gt;&#39; + url + &#39;&lt;/a&gt;&#39;;
+                });
+            }
+
+            async function loadPosts() {
+                const postsContainer = document.getElementById(&#39;postsContainer&#39;);
+                let text = &#34;&#34;;
+                try {
+                    const response = await fetch(&#39;post/p.txt&#39;);
+                    if (!response.ok) throw new Error(&#39;Not found&#39;);
+                    text = await response.text();
+                } catch (e) {
+                    text = &#34;&lt;title&gt;Welcome&lt;/title&gt;\n&lt;img&gt;https://files.catbox.moe/fisdnc.jpg&lt;/img&gt;\n&lt;p&gt;Hai This is XeonBTC first post.\n\nWelcome to my tech blog. ഇവിടെ എല്ലാം കാണാം.\n\nStay tuned for more updates.&lt;/p&gt;\n\n&lt;title&gt;Tech Update&lt;/title&gt;\n&lt;p&gt;Exploring new technologies and APIs today.\n\nAlways learning and building new tools. Keep watching this space for more content and technical posts.&lt;/p&gt;&#34;;
+                }
+
+                const postRegex = /&lt;title&gt;([\s\S]*?)&lt;\/title&gt;\s*(?:&lt;img[^&gt;]*&gt;([\s\S]*?)&lt;\/img&gt;\s*)?&lt;p&gt;([\s\S]*?)&lt;\/p&gt;/gi;
+                let match;
+                let postIndex = 0;
+                
+                while ((match = postRegex.exec(text)) !== null) {
+                    const title = match[1].trim();
+                    const img = match[2] ? match[2].trim() : null;
+                    let content = match[3].trim();
+                    const currentIndex = postIndex;
+                    
+                    let htmlContent = linkify(content);
+                    
+                    const postEl = document.createElement(&#39;div&#39;);
+                    postEl.className = &#39;post-card&#39;;
+                    postEl.id = &#39;post-&#39; + currentIndex;
+                    
+                    let headerRow = document.createElement(&#39;div&#39;);
+                    headerRow.className = &#39;post-header-row&#39;;
+
+                    let titleDiv = document.createElement(&#39;div&#39;);
+                    titleDiv.className = &#39;post-title&#39;;
+                    titleDiv.innerText = title;
+
+                    let shareIcon = document.createElement(&#39;div&#39;);
+                    shareIcon.className = &#39;share-icon&#39;;
+                    shareIcon.innerHTML = `&lt;svg viewBox=&#34;0 0 24 24&#34;&gt;&lt;path d=&#34;M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z&#34;/&gt;&lt;/svg&gt;`;
+                    
+                    shareIcon.onclick = async () =&gt; {
+                        const shareUrl = window.location.origin + window.location.pathname + &#39;#post-&#39; + currentIndex;
+                        
+                        let metaTitle = document.querySelector(&#39;meta[property=&#34;og:title&#34;]&#39;);
+                        let metaImage = document.querySelector(&#39;meta[property=&#34;og:image&#34;]&#39;);
+                        let metaUrl = document.querySelector(&#39;meta[property=&#34;og:url&#34;]&#39;);
+                        let metaDesc = document.querySelector(&#39;meta[property=&#34;og:description&#34;]&#39;);
+                        
+                        if(metaTitle) metaTitle.setAttribute(&#34;content&#34;, title);
+                        if(img &amp;&amp; metaImage) {
+                            metaImage.setAttribute(&#34;content&#34;, img);
+                        } else if (metaImage) {
+                            metaImage.setAttribute(&#34;content&#34;, &#34;&#34;);
+                        }
+                        if(metaUrl) metaUrl.setAttribute(&#34;content&#34;, shareUrl);
+                        if(metaDesc) metaDesc.setAttribute(&#34;content&#34;, title);
+
+                        const shareText = title + &#34;\n&#34; + shareUrl;
+
+                        if (navigator.share) {
+                            try {
+                                await navigator.share({
+                                    title: title,
+                                    text: title,
+                                    url: shareUrl
+                                });
+                            } catch (err) {
+                                navigator.clipboard.writeText(shareText);
+                            }
+                        } else {
+                            navigator.clipboard.writeText(shareText);
+                        }
+                    };
+
+                    headerRow.appendChild(titleDiv);
+                    headerRow.appendChild(shareIcon);
+                    postEl.appendChild(headerRow);
+
+                    if (img &amp;&amp; img !== &#39;&#39;) {
+                        let imgEl = document.createElement(&#39;img&#39;);
+                        imgEl.src = img;
+                        imgEl.className = &#39;post-img&#39;;
+                        postEl.appendChild(imgEl);
+                    }
+                    
+                    const contentDiv = document.createElement(&#39;div&#39;);
+                    contentDiv.className = &#39;post-content collapsed&#39;;
+                    contentDiv.innerHTML = htmlContent;
+                    
+                    postEl.appendChild(contentDiv);
+                    
+                    const actionsDiv = document.createElement(&#39;div&#39;);
+                    actionsDiv.className = &#39;post-actions&#39;;
+
+                    if (contentDiv.scrollHeight &gt; contentDiv.clientHeight || content.length &gt; 200) {
+                        const readMoreBtn = document.createElement(&#39;div&#39;);
+                        readMoreBtn.className = &#39;read-more-btn&#39;;
+                        readMoreBtn.innerText = &#39;[ READ MORE ]&#39;;
+                        readMoreBtn.onclick = () =&gt; {
+                            if (contentDiv.classList.contains(&#39;collapsed&#39;)) {
+                                contentDiv.classList.remove(&#39;collapsed&#39;);
+                                readMoreBtn.innerText = &#39;[ SHOW LESS ]&#39;;
+                            } else {
+                                contentDiv.classList.add(&#39;collapsed&#39;);
+                                readMoreBtn.innerText = &#39;[ READ MORE ]&#39;;
+                            }
+                        };
+                        actionsDiv.appendChild(readMoreBtn);
+                    }
+
+                    if (actionsDiv.children.length &gt; 0) {
+                        postEl.appendChild(actionsDiv);
+                    }
+                    
+                    postsContainer.appendChild(postEl);
+
+                    let searchGen = (title + &#34; &#34; + content).toLowerCase();
+                    techKeywords.forEach(kw =&gt; {
+                        if(searchGen.includes(kw)) {
+                            searchGen += &#34; &#34; + kw + &#34; technology code software script tool project system&#34;;
+                        }
+                    });
+
+                    allPosts.push({
+                        title: title,
+                        content: content.replace(/&lt;[^&gt;]+&gt;/g, &#39;&#39;), 
+                        element: postEl,
+                        searchString: searchGen
+                    });
+                    
+                    postIndex++;
+                }
+
+                if (window.location.hash &amp;&amp; window.location.hash.startsWith(&#39;#post-&#39;)) {
+                    const targetPost = document.querySelector(window.location.hash);
+                    if (targetPost) {
+                        setTimeout(() =&gt; {
+                            targetPost.scrollIntoView({ behavior: &#39;smooth&#39;, block: &#39;center&#39; });
+                            targetPost.classList.add(&#39;highlighted&#39;);
+                        }, 500); 
+                    }
+                }
+            }
+            loadPosts();
+
+            const searchInput = document.getElementById(&#39;postSearch&#39;);
+            const clearSearchBtn = document.getElementById(&#39;clearSearch&#39;);
+            const suggestionBox = document.getElementById(&#39;suggestionBox&#39;);
+
+            function getSuggestions(query) {
+                if (!query) return [];
+                let q = query.toLowerCase();
+                let results = new Set();
+                
+                allPosts.forEach(p =&gt; {
+                    if (p.title.toLowerCase().includes(q)) results.add(p.title);
+                    
+                    let words = p.searchString.split(/\s+/);
+                    words.forEach(w =&gt; {
+                        let clean = w.replace(/[^a-z0-9]/gi, &#39;&#39;);
+                        if (clean.includes(q) &amp;&amp; clean.length &gt; 2) {
+                            results.add(clean);
+                        }
+                    });
+                });
+                return Array.from(results).slice(0, 5); 
+            }
+
+            searchInput.addEventListener(&#39;input&#39;, (e) =&gt; {
+                let val = e.target.value.trim();
+                
+                if (val.length &gt; 0) {
+                    clearSearchBtn.style.display = &#39;block&#39;;
+                } else {
+                    clearSearchBtn.style.display = &#39;none&#39;;
+                }
+
+                let terms = val.toLowerCase().split(/\s+/).filter(t =&gt; t);
+                
+                allPosts.forEach(p =&gt; {
+                    if (terms.length === 0) {
+                        p.element.style.display = &#39;block&#39;;
+                    } else {
+                        let isMatch = terms.every(term =&gt; p.searchString.includes(term));
+                        p.element.style.display = isMatch ? &#39;block&#39; : &#39;none&#39;;
+                    }
+                });
+
+                let suggestions = getSuggestions(val);
+                if (suggestions.length &gt; 0 &amp;&amp; val !== &#39;&#39;) {
+                    suggestionBox.innerHTML = &#39;&#39;;
+                    suggestions.forEach(s =&gt; {
+                        let div = document.createElement(&#39;div&#39;);
+                        div.className = &#39;suggestion-item&#39;;
+                        div.innerText = s;
+                        div.onmousedown = () =&gt; { 
+                            searchInput.value = s;
+                            searchInput.dispatchEvent(new Event(&#39;input&#39;));
+                            suggestionBox.style.display = &#39;none&#39;;
+                        };
+                        suggestionBox.appendChild(div);
+                    });
+                    suggestionBox.style.display = &#39;block&#39;;
+                } else {
+                    suggestionBox.style.display = &#39;none&#39;;
+                }
+            });
+
+            clearSearchBtn.addEventListener(&#39;click&#39;, () =&gt; {
+                searchInput.value = &#39;&#39;;
+                searchInput.dispatchEvent(new Event(&#39;input&#39;));
+                searchInput.focus();
+            });
+
+            searchInput.addEventListener(&#39;blur&#39;, () =&gt; {
+                setTimeout(() =&gt; { suggestionBox.style.display = &#39;none&#39;; }, 150);
+            });
+
+            searchInput.addEventListener(&#39;focus&#39;, () =&gt; {
+                if (searchInput.value.trim() !== &#39;&#39; &amp;&amp; suggestionBox.children.length &gt; 0) {
+                    suggestionBox.style.display = &#39;block&#39;;
+                }
+            });
+
+            const canvas = document.getElementById(&#39;bgRainCanvas&#39;);
+            const ctx = canvas.getContext(&#39;2d&#39;);
+            let columns, drops = [];
+            const chars = &#39;01&#39;.split(&#39;&#39;);
+            const fontSize = 16; 
+
+            function resizeCanvas() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                columns = Math.floor(canvas.width / fontSize) + 1;
+                drops = [];
+                for(let x = 0; x &lt; columns; x++) drops[x] = Math.random() * -100;
+            }
+            window.addEventListener(&#39;resize&#39;, resizeCanvas);
+            resizeCanvas();
+
+            function drawRain() {
+                ctx.fillStyle = &#39;rgba(0, 0, 0, 0.1)&#39;;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = &#39;#d10000&#39;;
+                ctx.font = fontSize + &#39;px &#34;VT323&#34;, monospace&#39;;
+                
+                ctx.shadowColor = &#39;#d10000&#39;;
+                ctx.shadowBlur = 2;
+                
+                for(let i = 0; i &lt; drops.length; i++) {
+                    const text = chars[Math.floor(Math.random() * chars.length)];
+                    ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                    if(drops[i] * fontSize &gt; canvas.height &amp;&amp; Math.random() &gt; 0.975) drops[i] = 0;
+                    drops[i]++;
+                }
+            }
+            document.fonts.ready.then(() =&gt; setInterval(drawRain, 50));
+        });
+    </script>
+  </body>
+</html>
